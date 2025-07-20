@@ -6,55 +6,41 @@ const { authenticate } = require("passport");
 const passport = require("passport")
 const { saveRedirectUrl} = require("../middleware.js");
 
-router.get("/signup", (req, res) => {
-    res.render("users/signup.ejs")
-})
+const userController = require("../controllers/user.js")
 
-router.post("/signup", wrapAsync(async(req, res) => {
-    try {
-        let {username, email, password} = req.body;
-        const newUser = new User({email, username})
-        const registeredUser = await User.register(newUser, password)
-        req.login(registeredUser, (err) =>{
-          if(err) {
-            return next(err);
-          }
-          req.flash("success", "Welcome to wanderlust")
-          res.redirect("/listings")
-        })
-    } catch(e) {
-        req.flash("error", e.message);
-        res.redirect("/signup")
-    }
-})); 
+router
+.route("/signup")
+.get(userController.renderSignup)
+.post(wrapAsync(userController.signup));
 
-router.get("/login", (req , res) => {
-    res.render("users/login.ejs")
-})
-
-router.post(
-  "/login",
+router
+.route("/login")
+.get(userController.renderLogin)
+.post(
   saveRedirectUrl, // Put it BEFORE authenticate!
   passport.authenticate("local", {
     failureRedirect: "/login",
     failureFlash: true
   }),
-  (req, res) => {
-    req.flash("success", "Welcome back to Wanderlust!");
-
-    const redirectUrl = res.locals.saveRedirectUrl || "/listings";  // ✅ fallback here
-    res.redirect(redirectUrl);
-  }
+  userController.login
 );
 
-router.get("/logout", (req, res, next) => {
-  req.logout((err) => {
-    if(err) {
-      return next(err);
-    }
-    req.flash("success", "you are logged out!")
-    res.redirect("/listings")
-  })
-})
+// router.get("/signup", userController.renderSignup)
+
+// router.post("/signup", wrapAsync(userController.signup)); 
+
+// router.get("/login", userController.renderLogin)
+
+// router.post(
+//   "/login",
+//   saveRedirectUrl, // Put it BEFORE authenticate!
+//   passport.authenticate("local", {
+//     failureRedirect: "/login",
+//     failureFlash: true
+//   }),
+//   userController.login
+// );
+
+router.get("/logout", userController.logout)
 
 module.exports = router
